@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="dim_foreground_dark">#bebebe</color>
+    <color name="panel_background_dark">#CC000000</color>
+    <color name="panel_background_text">#88000000</color>
+
+    <color name="panel_slide_background">#0e0e0e</color>
+    <color name="panel_slide_progressbar">#fffdff</color>
+    <color name="panel_progress">#fb7299</color>
+
+    <color name="title_view_text">#fafafa</color>
+</resources>

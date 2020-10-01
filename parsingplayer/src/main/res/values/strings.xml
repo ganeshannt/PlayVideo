@@ -1,0 +1,8 @@
+<resources>
+    <string name="hd_high">High</string>
+    <string name="hd_low">Low</string>
+    <string name="hd_medium">Medium</string>
+    <string name="hd_standard">Standard</string>
+    <string name="seekTime" formatted="false">%s / %s</string>
+    <string name="other_content">Other content</string>
+</resources>
