@@ -1,85 +1,238 @@
+ Platform | Build Status
+ -------- | ------------
+ Android | [![Build Status](https://travis-ci.org/Bilibili/ci-ijk-ffmpeg-android.svg?branch=master)](https://travis-ci.org/Bilibili/ci-ijk-ffmpeg-android)
+ iOS | [![Build Status](https://travis-ci.org/Bilibili/ci-ijk-ffmpeg-ios.svg?branch=master)](https://travis-ci.org/Bilibili/ci-ijk-ffmpeg-ios)
+
+Video player based on [ffplay](http://ffmpeg.org)
+
+### Download
+
+- Android:
+ - Gradle
+```
+# required
+allprojects {
+    repositories {
+        jcenter()
+    }
+}
+
+dependencies {
+    # required, enough for most devices.
+    compile 'tv.danmaku.ijk.media:ijkplayer-java:0.8.8'
+    compile 'tv.danmaku.ijk.media:ijkplayer-armv7a:0.8.8'
+
+    # Other ABIs: optional
+    compile 'tv.danmaku.ijk.media:ijkplayer-armv5:0.8.8'
+    compile 'tv.danmaku.ijk.media:ijkplayer-arm64:0.8.8'
+    compile 'tv.danmaku.ijk.media:ijkplayer-x86:0.8.8'
+    compile 'tv.danmaku.ijk.media:ijkplayer-x86_64:0.8.8'
+
+    # ExoPlayer as IMediaPlayer: optional, experimental
+    compile 'tv.danmaku.ijk.media:ijkplayer-exo:0.8.8'
+}
+```
+- iOS
+ - in coming...
+
+### My Build Environment
+- Common
+ - Mac OS X 10.11.5
+- Android
+ - [NDK r10e](http://developer.android.com/tools/sdk/ndk/index.html)
+ - Android Studio 2.1.3
+ - Gradle 2.14.1
+- iOS
+ - Xcode 7.3 (7D175)
+- [HomeBrew](http://brew.sh)
+ - ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+ - brew install git
+
+### Latest Changes
+- [NEWS.md](NEWS.md)
+
+### Features
+- Common
+ - remove rarely used ffmpeg components to reduce binary size [config/module-lite.sh](config/module-lite.sh)
+ - workaround for some buggy online video.
+- Android
+ - platform: API 9~23
+ - cpu: ARMv7a, ARM64v8a, x86 (ARMv5 is not tested on real devices)
+ - api: [MediaPlayer-like](android/ijkplayer/ijkplayer-java/src/main/java/tv/danmaku/ijk/media/player/IMediaPlayer.java)
+ - video-output: NativeWindow, OpenGL ES 2.0
+ - audio-output: AudioTrack, OpenSL ES
+ - hw-decoder: MediaCodec (API 16+, Android 4.1+)
+ - alternative-backend: android.media.MediaPlayer, ExoPlayer
+- iOS
+ - platform: iOS 7.0~10.2.x
+ - cpu: armv7, arm64, i386, x86_64, (armv7s is obselete)
+ - api: [MediaPlayer.framework-like](ios/IJKMediaPlayer/IJKMediaPlayer/IJKMediaPlayback.h)
+ - video-output: OpenGL ES 2.0
+ - audio-output: AudioQueue, AudioUnit
+ - hw-decoder: VideoToolbox (iOS 8+)
+ - alternative-backend: AVFoundation.Framework.AVPlayer, MediaPlayer.Framework.MPMoviePlayerControlelr (obselete since iOS 8)
+
+### NOT-ON-PLAN
+- obsolete platforms (Android: API-8 and below; iOS: pre-6.0)
+- obsolete cpu: ARMv5, ARMv6, MIPS (I don't even have these types of devices…)
+- native subtitle render
+- avfilter support
+
+### Before Build
+```
+# install homebrew, git, yasm
+ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+brew install git
+brew install yasm
+
+# add these lines to your ~/.bash_profile or ~/.profile
+# export ANDROID_SDK=<your sdk path>
+# export ANDROID_NDK=<your ndk path>
+
+# on Cygwin (unmaintained)
+# install git, make, yasm
+```
+
+- If you prefer more codec/format
+```
+cd config
+rm module.sh
+ln -s module-default.sh module.sh
+cd android/contrib
+# cd ios
+sh compile-ffmpeg.sh clean
+```
+
+- If you prefer less codec/format for smaller binary size (include hevc function)
+```
+cd config
+rm module.sh
+ln -s module-lite-hevc.sh module.sh
+cd android/contrib
+# cd ios
+sh compile-ffmpeg.sh clean
+```
+
+- If you prefer less codec/format for smaller binary size (by default)
+```
+cd config
+rm module.sh
+ln -s module-lite.sh module.sh
+cd android/contrib
+# cd ios
+sh compile-ffmpeg.sh clean
+```
+
+- For Ubuntu/Debian users.
+```
+# choose [No] to use bash
+sudo dpkg-reconfigure dash
+```
+
+- If you'd like to share your config, pull request is welcome.
+
+### Build Android
+```
+git clone https://github.com/Bilibili/ijkplayer.git ijkplayer-android
+cd ijkplayer-android
+git checkout -B latest k0.8.8
+
+./init-android.sh
+
+cd android/contrib
+./compile-ffmpeg.sh clean
+./compile-ffmpeg.sh all
+
+cd ..
+./compile-ijk.sh all
+
+# Android Studio:
+#     Open an existing Android Studio project
+#     Select android/ijkplayer/ and import
+#
+#     define ext block in your root build.gradle
+#     ext {
+#       compileSdkVersion = 23       // depending on your sdk version
+#       buildToolsVersion = "23.0.0" // depending on your build tools version
+#
+#       targetSdkVersion = 23        // depending on your sdk version
+#     }
+#
+# If you want to enable debugging ijkplayer(native modules) on Android Studio 2.2+: (experimental)
+#     sh android/patch-debugging-with-lldb.sh armv7a
+#     Install Android Studio 2.2(+)
+#     Preference -> Android SDK -> SDK Tools
+#     Select (LLDB, NDK, Android SDK Build-tools,Cmake) and install
+#     Open an existing Android Studio project
+#     Select android/ijkplayer
+#     Sync Project with Gradle Files
+#     Run -> Edit Configurations -> Debugger -> Symbol Directories
+#     Add "ijkplayer-armv7a/.externalNativeBuild/ndkBuild/release/obj/local/armeabi-v7a" to Symbol Directories
+#     Run -> Debug 'ijkplayer-example'
+#     if you want to reverse patches:
+#     sh patch-debugging-with-lldb.sh reverse armv7a
+#
+# Eclipse: (obselete)
+#     File -> New -> Project -> Android Project from Existing Code
+#     Select android/ and import all project
+#     Import appcompat-v7
+#     Import preference-v7
+#
+# Gradle
+#     cd ijkplayer
+#     gradle
+
+```
+
+
+### Build iOS
+```
+git clone https://github.com/Bilibili/ijkplayer.git ijkplayer-ios
+cd ijkplayer-ios
+git checkout -B latest k0.8.8
+
+./init-ios.sh
+
+cd ios
+./compile-ffmpeg.sh clean
+./compile-ffmpeg.sh all
+
+# Demo
+#     open ios/IJKMediaDemo/IJKMediaDemo.xcodeproj with Xcode
+# 
+# Import into Your own Application
+#     Select your project in Xcode.
+#     File -> Add Files to ... -> Select ios/IJKMediaPlayer/IJKMediaPlayer.xcodeproj
+#     Select your Application's target.
+#     Build Phases -> Target Dependencies -> Select IJKMediaFramework
+#     Build Phases -> Link Binary with Libraries -> Add:
+#         IJKMediaFramework.framework
+#
+#         AudioToolbox.framework
+#         AVFoundation.framework
+#         CoreGraphics.framework
+#         CoreMedia.framework
+#         CoreVideo.framework
+#         libbz2.tbd
+#         libz.tbd
+#         MediaPlayer.framework
+#         MobileCoreServices.framework
+#         OpenGLES.framework
+#         QuartzCore.framework
+#         UIKit.framework
+#         VideoToolbox.framework
+#
+#         ... (Maybe something else, if you get any link error)
+# 
+```
+
+
 # ParsingPlayer
 
 ParsingPlayer is an Android video library based on [IjkPlayer](https://github.com/Bilibili/ijkplayer), playing video from Youku or other video sites.
 
 <img src="/screenshots/1.png" alt="screenshot" title="screenshot" width="250" height="436" />
 <img src="/screenshots/2.png" alt="screenshot" title="screenshot" width="436" height="250" />
-
-# Gradle Dependency
-
-[![Build Status](https://travis-ci.org/TedaLIEz/ParsingPlayer.svg?branch=master)](https://travis-ci.org/TedaLIEz/ParsingPlayer)
-[![License: LGPL v2.1](https://img.shields.io/badge/license-LGPL%20v2.1-blue.svg)](http://www.gnu.org/licenses/lgpl-2.1)
-[![GitHub release](https://img.shields.io/badge/release-2.0.6-blue.svg)](https://github.com/TedaLIEz/ParsingPlayer/releases/latest)
-
-
-
-The Gradle dependency is available via [jCenter](https://bintray.com/drummer-aidan/maven/inquiry/view).
-jCenter is the default Maven repository used by Android Studio.
-
-### Dependency
-
-Add this to your module's `build.gradle` file (make sure the version matches the last [release](https://github.com/TedaLIEz/ParsingPlayer/releases/latest)):
-
-```gradle
-dependencies {
-    // ... other dependencies
-    compile 'com.uniquestudio:parsingplayer:2.0.6'
-}
-```
-
----
-
-# Table of Contents
-
-1. [Quick Setup](https://github.com/TedaLIEz/ParsingPlayer#quick-setup)
-2. [License](https://github.com/TedaLIEz/ParsingPlayer#license)
-
-
-# Quick Setup
-
-```java
-public class MainActivity extends AppCompatActivity {
-    private ParsingVideoView mVideoView;
-
-    @Override
-    protected void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        mVideoView = (ParsingVideoView) findViewById(R.id.videoView);
-        mVideoView.play("http://v.youku.com/v_show/id_XMjUyNDIxNjAwNA==.html");
-    }
-
-
-    @Override
-    protected void onResume() {
-        super.onResume();
-        mVideoView.onResume();
-    }
-
-
-    @Override
-    protected void onPause() {
-        super.onPause();
-        mVideoView.onPause();
-    }
-
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        mVideoView.onDestroy();
-    }
-}
-```
-
----
-
-
-# License
-```bash
-Copyright (c) 2017 UniqueStudio
-Licensed under LGPLv2.1 or later
-```
 
 # No Commercial Use
 This is developed by GaneshanNT and Arun.The Entire IDEA and Code skill is By GaneshanNT.
